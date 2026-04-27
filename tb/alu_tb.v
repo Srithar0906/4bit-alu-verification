@@ -6,8 +6,10 @@ module alu_tb;
     reg  [2:0] opcode;
     wire [3:0] result;
     wire       carry, zero;
+    reg  [3:0] expected;
 
     integer pass_count, fail_count;
+    integer rand_pass,  rand_fail;
 
     alu uut (
         .a(a), .b(b),
@@ -22,6 +24,7 @@ module alu_tb;
         $dumpvars(0, alu_tb);
     end
 
+    // ── Directed Tests ────────────────────────────
     initial begin
         pass_count = 0;
         fail_count = 0;
@@ -30,9 +33,7 @@ module alu_tb;
         $display("   4-bit ALU Directed Tests   ");
         $display("==============================");
 
-        // ── ADD ──────────────────────────────────
         $display("\n--- ADD ---");
-
         a=4;  b=4;  opcode=3'b000; #10;
         if(result==8 && carry==0) begin
             $display("PASS: ADD  4+4   = %0d", result);
@@ -78,9 +79,7 @@ module alu_tb;
             fail_count=fail_count+1;
         end
 
-        // ── SUB ──────────────────────────────────
         $display("\n--- SUB ---");
-
         a=7;  b=3;  opcode=3'b001; #10;
         if(result==4) begin
             $display("PASS: SUB  7-3   = %0d", result);
@@ -117,9 +116,7 @@ module alu_tb;
             fail_count=fail_count+1;
         end
 
-        // ── AND ──────────────────────────────────
         $display("\n--- AND ---");
-
         a=4'hA; b=4'h5; opcode=3'b010; #10;
         if(result==0 && zero==1) begin
             $display("PASS: AND  A&5   = %0d (zero=1)", result);
@@ -147,9 +144,7 @@ module alu_tb;
             fail_count=fail_count+1;
         end
 
-        // ── OR ───────────────────────────────────
         $display("\n--- OR ---");
-
         a=4'hA; b=4'h5; opcode=3'b011; #10;
         if(result==4'hF) begin
             $display("PASS: OR   A|5   = %0d", result);
@@ -177,9 +172,7 @@ module alu_tb;
             fail_count=fail_count+1;
         end
 
-        // ── NOT ──────────────────────────────────
         $display("\n--- NOT ---");
-
         a=4'b0100; b=0; opcode=3'b100; #10;
         if(result==4'b1011) begin
             $display("PASS: NOT  ~4    = %0d", result);
@@ -207,9 +200,7 @@ module alu_tb;
             fail_count=fail_count+1;
         end
 
-        // ── XOR ──────────────────────────────────
         $display("\n--- XOR ---");
-
         a=4'hA; b=4'hA; opcode=3'b101; #10;
         if(result==0 && zero==1) begin
             $display("PASS: XOR  A^A   = %0d (zero=1)", result);
@@ -237,12 +228,56 @@ module alu_tb;
             fail_count=fail_count+1;
         end
 
-        // ── Summary ──────────────────────────────
         $display("\n==============================");
+        $display(" DIRECTED TESTS");
         $display(" PASSED: %0d / %0d", pass_count, pass_count+fail_count);
         $display(" FAILED: %0d / %0d", fail_count, pass_count+fail_count);
         $display("==============================");
+    end
 
+    // ── Random Verification ───────────────────────
+    initial begin
+        rand_pass = 0;
+        rand_fail = 0;
+
+        #5000; // wait for directed tests to finish
+
+        $display("\n==============================");
+        $display("   4-bit ALU Random Tests     ");
+        $display("==============================");
+
+        /* verilator lint_off WIDTHTRUNC */
+        repeat(500) begin
+            a      = $random;
+            b      = $random;
+            opcode = $random % 6;
+            #10;
+
+            case(opcode)
+                3'b000: expected = a + b;
+                3'b001: expected = a - b;
+                3'b010: expected = a & b;
+                3'b011: expected = a | b;
+                3'b100: expected = ~a;
+                3'b101: expected = a ^ b;
+                default: expected = 4'b0000;
+            endcase
+
+            if(result == expected) begin
+                rand_pass = rand_pass + 1;
+            end else begin
+                rand_fail = rand_fail + 1;
+                $display("FAIL: op=%0d a=%0d b=%0d expected=%0d got=%0d",
+                          opcode, a, b, expected, result);
+            end
+        end
+        /* verilator lint_on WIDTHTRUNC */
+
+        $display("\n==============================");
+        $display(" RANDOM TESTS (500 vectors)");
+        $display(" PASSED: %0d / 500", rand_pass);
+        $display(" FAILED: %0d / 500", rand_fail);
+        $display("==============================");
         $finish;
     end
 
