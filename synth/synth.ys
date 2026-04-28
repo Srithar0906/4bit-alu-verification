@@ -1,0 +1,4 @@
+read_verilog rtl/alu.v
+synth -top alu
+stat
+show -format png -prefix synth/alu_schematic
