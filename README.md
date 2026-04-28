@@ -1,6 +1,6 @@
 # 4-bit ALU with Functional Verification
 
-A fully verified 4-bit Arithmetic Logic Unit (ALU) designed in Verilog, with a SystemVerilog testbench featuring directed tests, constrained random stimulus, and functional coverage.
+A fully verified 4-bit Arithmetic Logic Unit (ALU) designed in Verilog, with a self-checking testbench featuring directed tests and constrained random stimulus.
 
 ---
 
@@ -9,7 +9,7 @@ A fully verified 4-bit Arithmetic Logic Unit (ALU) designed in Verilog, with a S
 - Supports 6 operations: ADD, SUB, AND, OR, NOT, XOR
 - Output flags: Carry Out, Zero Flag, Overflow
 - Self-checking testbench with pass/fail reporting
-- Constrained random verification with covergroup
+- Random verification with 500 auto-checked vectors
 - Gate-level synthesis using Yosys
 - Waveform analysis in GTKWave
 
@@ -22,13 +22,13 @@ A fully verified 4-bit Arithmetic Logic Unit (ALU) designed in Verilog, with a S
 ├── rtl/
 │   └── alu.v              # ALU RTL design
 ├── tb/
-│   └── alu_tb.sv          # SystemVerilog testbench
+│   └── alu_tb.v           # Verilog testbench
 ├── sim/
 │   └── waveform.vcd       # GTKWave dump
 ├── synth/
 │   └── synth.ys           # Yosys synthesis script
 ├── docs/
-│   └── waveforms/         # GTKWave screenshots
+│   └── waveforms/         # GTKWave screenshots and schematic
 └── README.md
 ```
 
@@ -49,14 +49,12 @@ A fully verified 4-bit Arithmetic Logic Unit (ALU) designed in Verilog, with a S
 
 ## Tools Used
 
-| Tool          | Purpose                        |
-|---------------|-------------------------------|
-| Verilog       | RTL Design                    |
-| SystemVerilog | Testbench & Coverage          |
-| Verilator     | Simulation                    |
-| GTKWave       | Waveform Viewer               |
-| Yosys         | Logic Synthesis               |
-| Vivado / Quartus | FPGA Implementation        |
+| Tool             | Purpose                        |
+|------------------|-------------------------------|
+| Verilog          | RTL Design & Testbench        |
+| Verilator        | Simulation                    |
+| GTKWave          | Waveform Viewer               |
+| Yosys            | Logic Synthesis               |
 
 ---
 
@@ -65,8 +63,12 @@ A fully verified 4-bit Arithmetic Logic Unit (ALU) designed in Verilog, with a S
 ### Simulate with Verilator
 
 ```bash
-verilator --cc rtl/alu.v --exe tb/alu_tb.sv --build
-./obj_dir/Valu
+verilator --binary --trace \
+  rtl/alu.v tb/alu_tb.v \
+  --top-module alu_tb \
+  -o /home/srithar/4bit-alu-verification/sim/alu_sim
+
+./sim/alu_sim
 ```
 
 ### View Waveforms
@@ -86,45 +88,53 @@ yosys synth/synth.ys
 ## Verification Plan
 
 - **Directed tests** — all 6 opcodes with known input/output pairs
-- **Edge cases** — A=0, B=0, A=15, B=15, overflow conditions
-- **Random tests** — 1000 random vectors with auto-checking
-- **Coverage goal** — 100% opcode coverage, all flags toggled
+- **Edge cases** — A=0, B=0, A=15, B=15, overflow, underflow
+- **Random tests** — 500 random vectors with auto-checking
+- **Self-checking** — reference model computes expected result and compares with DUT output
 
 ---
 
 ## Sample Waveform
 
-> GTKWave screenshots will be added here after simulation.
+![GTKWave Waveform](docs/waveforms/day3_first_waveform.png)
+
+---
+
+## Gate-level Schematic
+
+![ALU Schematic](docs/waveforms/alu_schematic.png)
 
 ---
 
 ## Results
 
-| Metric              | Result     |
-|---------------------|------------|
-| Directed tests      | ✅ Passing |
-| Random tests (1000) | ✅ Passing |
-| Opcode coverage     | 100%       |
-| Flag coverage       | 100%       |
-
-> Results will be updated as the project progresses.
+| Metric                  | Result                        |
+|-------------------------|-------------------------------|
+| Directed tests          | ✅ 21 / 21 Passing            |
+| Random tests            | ✅ 500 / 500 Passing          |
+| Total tests             | ✅ 521 / 521 Passing          |
+| Synthesis               | ✅ 93 gates, 0 problems       |
+| Gate types              | AND, NAND, OR, NOR, XOR, MUX  |
 
 ---
 
 ## What I Learned
 
 - RTL design using Verilog `case` statements
-- Writing self-checking testbenches in SystemVerilog
-- Constrained random verification and functional coverage
+- Writing self-checking testbenches in Verilog
+- Random verification using `$random` and `repeat` loops
+- Reference model approach for auto-checking random tests
+- 2's complement arithmetic — overflow and underflow behavior
 - Gate-level synthesis flow using Yosys
-- Waveform debugging with GTKWave
+- Debugging RTL bugs using Verilator strict linting
+- Waveform analysis with GTKWave
 
 ---
 
 ## Academic Context
 
-**Course:** BE.EE(VLSI DESIGN AND TECHNOLOGY).
-**Institution:** Anna University Regional Campus Coimbatore.
+**Course:** BE.EE (VLSI Design and Technology)
+**Institution:** Anna University Regional Campus Coimbatore
 **Tools:** Open-source EDA (Yosys, Verilator, GTKWave)
 
 ---
